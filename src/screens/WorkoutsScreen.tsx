@@ -27,6 +27,7 @@ export default function WorkoutsScreen() {
   const [selectedExercises, setSelectedExercises] = useState<TemplateExercise[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [search, setSearch] = useState('');
+  const [detailTemplate, setDetailTemplate] = useState<WorkoutTemplate | null>(null);
 
   const allExercises = getAllExercises();
 
@@ -148,7 +149,7 @@ export default function WorkoutsScreen() {
           <Text style={styles.empty}>No templates yet. Tap + to create one.</Text>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity style={styles.card} onPress={() => setDetailTemplate(item)} activeOpacity={0.7}>
             <View style={styles.cardContent}>
               <Text style={styles.cardName}>{item.name}</Text>
               <Text style={styles.cardSub}>{item.exercises.length} exercises</Text>
@@ -171,9 +172,66 @@ export default function WorkoutsScreen() {
                 <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
               </TouchableOpacity>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
+
+      {/* ── Template Detail Modal ───────────────────────────────────────── */}
+      <Modal visible={!!detailTemplate} animationType="slide" presentationStyle="pageSheet">
+        {detailTemplate && (
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setDetailTemplate(null)}>
+                <Ionicons name="close" size={22} color={COLORS.white} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle} numberOfLines={1}>{detailTemplate.name}</Text>
+              <TouchableOpacity onPress={() => { setDetailTemplate(null); openEdit(detailTemplate); }}>
+                <Ionicons name="pencil-outline" size={20} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={detailTemplate.exercises}
+              keyExtractor={e => e.id}
+              contentContainerStyle={{ paddingBottom: 120 }}
+              renderItem={({ item, index }) => (
+                <View style={styles.detailRow}>
+                  <View style={styles.detailIndex}>
+                    <Text style={styles.detailIndexText}>{index + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.detailName}>{item.name}</Text>
+                    <Text style={styles.detailCat}>{item.category}</Text>
+                  </View>
+                  <View style={styles.detailSets}>
+                    <Text style={styles.detailSetsNum}>{item.defaultSets ?? 3}</Text>
+                    <Text style={styles.detailSetsLabel}>sets</Text>
+                  </View>
+                </View>
+              )}
+              ListHeaderComponent={
+                <Text style={styles.detailCount}>
+                  {detailTemplate.exercises.length} exercises ·{' '}
+                  {detailTemplate.exercises.reduce((s, e) => s + (e.defaultSets ?? 3), 0)} total sets
+                </Text>
+              }
+            />
+
+            <View style={styles.detailFooter}>
+              <TouchableOpacity
+                style={styles.detailStartBtn}
+                onPress={() => {
+                  setDetailTemplate(null);
+                  navigation.navigate('ActiveWorkout', { template: detailTemplate });
+                }}
+              >
+                <Ionicons name="play" size={18} color="#FFF" />
+                <Text style={styles.detailStartText}>Start Workout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </Modal>
 
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modal}>
@@ -435,4 +493,34 @@ const styles = StyleSheet.create({
     minWidth: 28, textAlign: 'center',
   },
   stepLabel: { fontSize: 13, color: COLORS.muted, marginLeft: 2 },
+  // Detail modal
+  detailCount: { padding: 16, paddingBottom: 8, color: COLORS.muted, fontSize: 13 },
+  detailRow: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.card,
+  },
+  detailIndex: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: COLORS.inputBg, alignItems: 'center', justifyContent: 'center',
+    marginRight: 12,
+  },
+  detailIndexText: { fontSize: 13, fontWeight: '600', color: COLORS.muted },
+  detailName: { fontSize: 15, fontWeight: '500', color: COLORS.white },
+  detailCat: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
+  detailSets: { alignItems: 'center', minWidth: 44 },
+  detailSetsNum: { fontSize: 20, fontWeight: '700', color: COLORS.primary },
+  detailSetsLabel: { fontSize: 11, color: COLORS.muted },
+  detailFooter: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    padding: 20, paddingBottom: 36,
+    backgroundColor: COLORS.card,
+    borderTopWidth: 1, borderTopColor: COLORS.border,
+  },
+  detailStartBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: COLORS.primary, paddingVertical: 16, borderRadius: 14,
+  },
+  detailStartText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 });
