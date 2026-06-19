@@ -105,6 +105,7 @@ const DEFAULT_EXERCISES: ExerciseTemplate[] = [
   { id: 's25', name: 'Kettlebell Press', category: 'Shoulders' },
   { id: 's26', name: 'Plate Front Raise', category: 'Shoulders' },
   { id: 's27', name: 'Push Press', category: 'Shoulders' },
+  { id: 's28', name: 'Single-Arm Cable Front Raise', category: 'Shoulders' },
 
   // ── BICEPS ─────────────────────────────────────────────────────────────────
   { id: 'bi01', name: 'Barbell Curl', category: 'Biceps' },
@@ -148,6 +149,7 @@ const DEFAULT_EXERCISES: ExerciseTemplate[] = [
   { id: 'tr16', name: 'JM Press', category: 'Triceps' },
   { id: 'tr17', name: 'Rolling DB Extension', category: 'Triceps' },
   { id: 'tr18', name: 'Overhead Cable Tricep Extension (Single Arm)', category: 'Triceps' },
+  { id: 'tr19', name: 'French Press (EZ-Bar)', category: 'Triceps' },
 
   // ── LEGS ───────────────────────────────────────────────────────────────────
   { id: 'l01', name: 'Barbell Back Squat', category: 'Legs' },
@@ -231,6 +233,7 @@ const DEFAULT_EXERCISES: ExerciseTemplate[] = [
   { id: 'co22', name: 'Reverse Crunch', category: 'Core' },
   { id: 'co23', name: 'Cable Woodchop', category: 'Core' },
   { id: 'co24', name: 'Copenhagen Plank', category: 'Core' },
+  { id: 'co25', name: 'Incline Leg Raise', category: 'Core' },
 
   // ── FOREARMS ───────────────────────────────────────────────────────────────
   { id: 'fo01', name: 'Wrist Curl (Barbell)', category: 'Forearms' },
@@ -368,4 +371,88 @@ export async function saveMeasurement(measurement: BodyMeasurement): Promise<voi
 export async function deleteMeasurement(id: string): Promise<void> {
   const measurements = await getMeasurements();
   await AsyncStorage.setItem(KEYS.BODY, JSON.stringify(measurements.filter(m => m.id !== id)));
+}
+
+// ── YOUR WORKOUT PLAN ─────────────────────────────────────────────────────────
+
+const MY_PLAN_TEMPLATES: WorkoutTemplate[] = [
+  {
+    id: 'plan-a',
+    name: 'Sunday A — Back + Front Delts + Triceps',
+    exercises: [
+      { id: 'b10',  name: 'Lat Pulldown (Wide Grip)',              category: 'Back',      defaultSets: 3 },
+      { id: 'b11',  name: 'Lat Pulldown (Close Grip)',             category: 'Back',      defaultSets: 3 },
+      { id: 'b16',  name: 'Cable Seated Row (Wide Grip)',          category: 'Back',      defaultSets: 3 },
+      { id: 'b15',  name: 'Dumbbell Single-Arm Row',               category: 'Back',      defaultSets: 3 },
+      { id: 'b30',  name: 'Cable Pullover (Lat Focus)',            category: 'Back',      defaultSets: 3 },
+      { id: 's11',  name: 'Cable Front Raise',                     category: 'Shoulders', defaultSets: 3 },
+      { id: 's04',  name: 'Machine Shoulder Press',                category: 'Shoulders', defaultSets: 2 },
+      { id: 's28',  name: 'Single-Arm Cable Front Raise',         category: 'Shoulders', defaultSets: 2 },
+      { id: 'tr01', name: 'Cable Pushdown (Rope)',                 category: 'Triceps',   defaultSets: 2 },
+      { id: 'tr08', name: 'Dumbbell Overhead Tricep Extension',   category: 'Triceps',   defaultSets: 2 },
+      { id: 'b26',  name: 'Hyperextension (45°)',                  category: 'Back',      defaultSets: 3 },
+    ],
+  },
+  {
+    id: 'plan-b',
+    name: 'Tuesday B — Arms + Shoulders + Abs',
+    exercises: [
+      { id: 'tr01', name: 'Cable Pushdown (Rope)',                 category: 'Triceps',   defaultSets: 3 },
+      { id: 'bi02', name: 'Dumbbell Curl',                         category: 'Biceps',    defaultSets: 3 },
+      { id: 's02',  name: 'Dumbbell Overhead Press',              category: 'Shoulders', defaultSets: 2 },
+      { id: 'tr08', name: 'Dumbbell Overhead Tricep Extension',   category: 'Triceps',   defaultSets: 2 },
+      { id: 'bi16', name: 'EZ-Bar Curl',                          category: 'Biceps',    defaultSets: 2 },
+      { id: 's06',  name: 'Dumbbell Lateral Raise',               category: 'Shoulders', defaultSets: 2 },
+      { id: 'tr19', name: 'French Press (EZ-Bar)',                category: 'Triceps',   defaultSets: 2 },
+      { id: 'bi03', name: 'Hammer Curl',                          category: 'Biceps',    defaultSets: 2 },
+      { id: 's14',  name: 'Machine Rear Delt (Pec Deck)',         category: 'Shoulders', defaultSets: 2 },
+      { id: 'co25', name: 'Incline Leg Raise',                    category: 'Core',      defaultSets: 4 },
+    ],
+  },
+  {
+    id: 'plan-c',
+    name: 'Thursday C — Chest + Rear Delts + Biceps',
+    exercises: [
+      { id: 'c05',  name: 'Dumbbell Incline Bench Press',         category: 'Chest',     defaultSets: 3 },
+      { id: 'c10',  name: 'Machine Chest Press',                  category: 'Chest',     defaultSets: 3 },
+      { id: 'c02',  name: 'Dumbbell Bench Press',                 category: 'Chest',     defaultSets: 3 },
+      { id: 'c04',  name: 'Barbell Incline Bench Press',          category: 'Chest',     defaultSets: 3 },
+      { id: 'c17',  name: 'Pec Deck Machine',                     category: 'Chest',     defaultSets: 3 },
+      { id: 's14',  name: 'Machine Rear Delt (Pec Deck)',         category: 'Shoulders', defaultSets: 2 },
+      { id: 's21',  name: 'Cable Face Pull',                      category: 'Shoulders', defaultSets: 2 },
+      { id: 's12',  name: 'Dumbbell Rear Delt Fly',              category: 'Shoulders', defaultSets: 2 },
+      { id: 'bi02', name: 'Dumbbell Curl',                        category: 'Biceps',    defaultSets: 2 },
+      { id: 'bi03', name: 'Hammer Curl',                          category: 'Biceps',    defaultSets: 2 },
+    ],
+  },
+  {
+    id: 'plan-d',
+    name: 'Saturday D — Legs',
+    exercises: [
+      { id: 'l01',  name: 'Barbell Back Squat',                   category: 'Legs',   defaultSets: 3 },
+      { id: 'l07',  name: 'Dumbbell Lunge',                       category: 'Legs',   defaultSets: 3 },
+      { id: 'l06',  name: 'Leg Press',                            category: 'Legs',   defaultSets: 3 },
+      { id: 'l22',  name: 'Leg Adduction (Machine)',              category: 'Legs',   defaultSets: 3 },
+      { id: 'l23',  name: 'Leg Abduction (Machine)',              category: 'Legs',   defaultSets: 3 },
+      { id: 'l17',  name: 'Leg Extension (Machine)',              category: 'Legs',   defaultSets: 3 },
+      { id: 'l19',  name: 'Seated Leg Curl (Machine)',            category: 'Legs',   defaultSets: 3 },
+      { id: 'ca01', name: 'Standing Calf Raise (Machine)',        category: 'Calves', defaultSets: 3 },
+    ],
+  },
+];
+
+export async function seedWorkoutPlan(): Promise<void> {
+  try {
+    const already = await AsyncStorage.getItem('plan_seeded_v1');
+    if (already) return;
+    const templates = await getTemplates();
+    const existingIds = new Set(templates.map(t => t.id));
+    const toAdd = MY_PLAN_TEMPLATES.filter(t => !existingIds.has(t.id));
+    if (toAdd.length > 0) {
+      await AsyncStorage.setItem(KEYS.TEMPLATES, JSON.stringify([...templates, ...toAdd]));
+    }
+    await AsyncStorage.setItem('plan_seeded_v1', 'true');
+  } catch {
+    // silently ignore
+  }
 }

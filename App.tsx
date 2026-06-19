@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -6,9 +7,12 @@ import { useFonts } from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import TabNavigator from './src/navigation/TabNavigator';
 import { COLORS } from './src/theme';
+import { seedWorkoutPlan } from './src/storage/storage';
 
 export default function App() {
   const [fontsLoaded] = useFonts({ ...Ionicons.font });
+
+  useEffect(() => { seedWorkoutPlan(); }, []);
 
   if (!fontsLoaded) {
     return (
