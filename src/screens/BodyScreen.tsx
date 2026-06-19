@@ -23,6 +23,15 @@ const FIELDS: { key: keyof Omit<BodyMeasurement, 'id' | 'date' | 'notes'>; label
   { key: 'leftThigh', label: 'Left Thigh', unit: 'cm' },
 ];
 
+function toDateInput(iso: string) {
+  return iso.slice(0, 10); // YYYY-MM-DD
+}
+
+function dateInputToIso(dateStr: string) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -41,6 +50,8 @@ const emptyForm = (): Omit<BodyMeasurement, 'id' | 'date'> => ({
 export default function BodyScreen() {
   const [measurements, setMeasurements] = useState<BodyMeasurement[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formDate, setFormDate] = useState('');
   const [form, setForm] = useState(emptyForm());
   const [chartField, setChartField] = useState<typeof FIELDS[0]>(FIELDS[0]);
 
@@ -50,14 +61,42 @@ export default function BodyScreen() {
     }, [])
   );
 
+  const openAdd = () => {
+    setEditingId(null);
+    setFormDate(toDateInput(new Date().toISOString()));
+    setForm(emptyForm());
+    setShowForm(true);
+  };
+
+  const openEdit = (m: BodyMeasurement) => {
+    setEditingId(m.id);
+    setFormDate(toDateInput(m.date));
+    setForm({
+      weight: m.weight, leftArm: m.leftArm, rightArm: m.rightArm,
+      waistRelaxed: m.waistRelaxed, waistFlexed: m.waistFlexed,
+      rightThigh: m.rightThigh, leftThigh: m.leftThigh, notes: m.notes,
+    });
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(emptyForm());
+  };
+
   const handleSave = async () => {
     const hasData = FIELDS.some(f => form[f.key].trim() !== '');
     if (!hasData) { alertMsg('Enter at least one measurement'); return; }
-    const m: BodyMeasurement = { id: Date.now().toString(), date: new Date().toISOString(), ...form };
+    const m: BodyMeasurement = {
+      id: editingId ?? Date.now().toString(),
+      date: dateInputToIso(formDate),
+      ...form,
+    };
     await saveMeasurement(m);
-    setMeasurements(prev => [m, ...prev]);
-    setShowForm(false);
-    setForm(emptyForm());
+    const updated = await getMeasurements();
+    setMeasurements(updated);
+    closeForm();
   };
 
   const handleDelete = (id: string) => {
@@ -83,7 +122,7 @@ export default function BodyScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Body</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowForm(true)}>
+        <TouchableOpacity style={styles.addBtn} onPress={openAdd}>
           <Ionicons name="add" size={24} color={COLORS.white} />
         </TouchableOpacity>
       </View>
@@ -147,9 +186,14 @@ export default function BodyScreen() {
           <View key={m.id} style={styles.entryCard}>
             <View style={styles.entryHeader}>
               <Text style={styles.entryDate}>{formatDate(m.date)}</Text>
-              <TouchableOpacity onPress={() => handleDelete(m.id)}>
-                <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
-              </TouchableOpacity>
+              <View style={styles.entryActions}>
+                <TouchableOpacity onPress={() => openEdit(m)} style={styles.actionBtn}>
+                  <Ionicons name="pencil-outline" size={16} color={COLORS.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDelete(m.id)} style={styles.actionBtn}>
+                  <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={styles.entryGrid}>
               {FIELDS.filter(f => m[f.key] !== '').map(f => (
@@ -164,21 +208,35 @@ export default function BodyScreen() {
         ))}
       </ScrollView>
 
-      {/* Add Measurement Modal */}
+      {/* Add / Edit Measurement Modal */}
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => { setShowForm(false); setForm(emptyForm()); }}>
+              <TouchableOpacity onPress={closeForm}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Add Measurements</Text>
+              <Text style={styles.modalTitle}>{editingId ? 'Edit Measurements' : 'Add Measurements'}</Text>
               <TouchableOpacity onPress={handleSave}>
                 <Text style={styles.saveText}>Save</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={styles.formScroll} keyboardShouldPersistTaps="handled">
+              {/* Date field */}
+              <View style={styles.fieldRow}>
+                <Text style={styles.fieldLabel}>Date</Text>
+                <TextInput
+                  style={[styles.input, { minWidth: 130, textAlign: 'right' }]}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={COLORS.muted}
+                  value={formDate}
+                  onChangeText={setFormDate}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={10}
+                />
+              </View>
+
               {FIELDS.map(f => (
                 <View key={f.key} style={styles.fieldRow}>
                   <Text style={styles.fieldLabel}>{f.label}</Text>
@@ -242,7 +300,9 @@ const styles = StyleSheet.create({
   historyLabel: { fontSize: 14, color: COLORS.muted, marginBottom: 10 },
   entryCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 14, marginBottom: 10 },
   entryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  entryDate: { fontSize: 14, fontWeight: '600', color: COLORS.white },
+  entryDate: { fontSize: 14, fontWeight: '600', color: COLORS.white, flex: 1 },
+  entryActions: { flexDirection: 'row', gap: 12 },
+  actionBtn: { padding: 4 },
   entryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   entryCell: { minWidth: '40%' },
   entryCellVal: { fontSize: 15, fontWeight: '600', color: COLORS.white },
