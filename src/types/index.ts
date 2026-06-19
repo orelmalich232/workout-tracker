@@ -38,12 +38,11 @@ export interface BodyMeasurement {
   id: string;
   date: string; // ISO string
   weight: string;
-  chest: string;
-  waist: string;
-  hips: string;
   leftArm: string;
   rightArm: string;
-  leftThigh: string;
+  waistRelaxed: string;
+  waistFlexed: string;
   rightThigh: string;
+  leftThigh: string;
   notes: string;
 }

@@ -15,13 +15,12 @@ const { width } = Dimensions.get('window');
 
 const FIELDS: { key: keyof Omit<BodyMeasurement, 'id' | 'date' | 'notes'>; label: string; unit: string }[] = [
   { key: 'weight', label: 'Body Weight', unit: 'kg' },
-  { key: 'chest', label: 'Chest', unit: 'cm' },
-  { key: 'waist', label: 'Waist', unit: 'cm' },
-  { key: 'hips', label: 'Hips', unit: 'cm' },
   { key: 'leftArm', label: 'Left Arm', unit: 'cm' },
   { key: 'rightArm', label: 'Right Arm', unit: 'cm' },
-  { key: 'leftThigh', label: 'Left Thigh', unit: 'cm' },
+  { key: 'waistRelaxed', label: 'Waist Relaxed', unit: 'cm' },
+  { key: 'waistFlexed', label: 'Waist Flexed', unit: 'cm' },
   { key: 'rightThigh', label: 'Right Thigh', unit: 'cm' },
+  { key: 'leftThigh', label: 'Left Thigh', unit: 'cm' },
 ];
 
 function formatDate(iso: string) {
@@ -35,8 +34,8 @@ function formatShort(iso: string) {
 }
 
 const emptyForm = (): Omit<BodyMeasurement, 'id' | 'date'> => ({
-  weight: '', chest: '', waist: '', hips: '',
-  leftArm: '', rightArm: '', leftThigh: '', rightThigh: '', notes: '',
+  weight: '', leftArm: '', rightArm: '',
+  waistRelaxed: '', waistFlexed: '', rightThigh: '', leftThigh: '', notes: '',
 });
 
 export default function BodyScreen() {
