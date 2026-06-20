@@ -35,14 +35,13 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
   };
 
   const updateSet = (exIdx: number, setIdx: number, field: keyof SetEntry, value: string | boolean) => {
-    setExercises(prev => {
-      const next = prev.map((ex, i) =>
+    setExercises(prev =>
+      prev.map((ex, i) =>
         i === exIdx
           ? { ...ex, sets: ex.sets.map((s, j) => j === setIdx ? { ...s, [field]: value } : s) }
           : ex
-      );
-      return next;
-    });
+      )
+    );
   };
 
   const addSet = (exIdx: number) => {
@@ -115,24 +114,39 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
             <Text style={styles.exerciseName}>{ex.exercise.name}</Text>
             <Text style={styles.category}>{ex.exercise.category}</Text>
 
+            {/* Header: Set | ✓ | Weight | Reps */}
             <View style={styles.setHeader}>
-              <Text style={[styles.setCol, { flex: 0.5 }]}>Set</Text>
-              <Text style={[styles.setCol, { flex: 1.5 }]}>Weight (kg)</Text>
+              <Text style={[styles.setCol, { width: 28 }]}>#</Text>
+              <Text style={[styles.setCol, { width: 48 }]}>Done</Text>
+              <Text style={[styles.setCol, { flex: 1 }]}>Weight (kg)</Text>
               <Text style={[styles.setCol, { flex: 1 }]}>Reps</Text>
-              <Text style={[styles.setCol, { flex: 0.7 }]}>Done</Text>
             </View>
 
             {ex.sets.map((set, setIdx) => (
               <View key={setIdx} style={styles.setRow}>
-                <Text style={[styles.setNum, { flex: 0.5 }]}>{setIdx + 1}</Text>
+                {/* Set number */}
+                <Text style={[styles.setNum, { width: 28 }]}>{setIdx + 1}</Text>
+
+                {/* Done checkbox — moved left for easy thumb access */}
+                <TouchableOpacity
+                  style={[styles.checkBtn, set.completed && styles.checkBtnActive, { width: 48 }]}
+                  onPress={() => updateSet(exIdx, setIdx, 'completed', !set.completed)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="checkmark" size={18} color={set.completed ? '#FFFFFF' : COLORS.muted} />
+                </TouchableOpacity>
+
+                {/* Weight */}
                 <TextInput
-                  style={[styles.input, { flex: 1.5 }]}
+                  style={[styles.input, { flex: 1 }]}
                   placeholder="0"
                   placeholderTextColor={COLORS.muted}
                   keyboardType="decimal-pad"
                   value={set.weight}
                   onChangeText={v => updateSet(exIdx, setIdx, 'weight', v)}
                 />
+
+                {/* Reps */}
                 <TextInput
                   style={[styles.input, { flex: 1 }]}
                   placeholder="0"
@@ -141,17 +155,11 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
                   value={set.reps}
                   onChangeText={v => updateSet(exIdx, setIdx, 'reps', v)}
                 />
-                <View style={{ flex: 0.7, alignItems: 'center' }}>
-                  <TouchableOpacity
-                    style={[styles.checkBtn, set.completed && styles.checkBtnActive]}
-                    onPress={() => updateSet(exIdx, setIdx, 'completed', !set.completed)}
-                  >
-                    <Ionicons name="checkmark" size={16} color={set.completed ? '#FFFFFF' : COLORS.muted} />
-                  </TouchableOpacity>
-                </View>
+
+                {/* Remove */}
                 {ex.sets.length > 1 && (
                   <TouchableOpacity onPress={() => removeSet(exIdx, setIdx)} style={styles.removeSet}>
-                    <Ionicons name="remove-circle-outline" size={18} color={COLORS.danger} />
+                    <Ionicons name="remove-circle-outline" size={20} color={COLORS.danger} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -182,12 +190,10 @@ const styles = StyleSheet.create({
   finishText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
   workoutName: { fontSize: 22, fontWeight: '700', color: COLORS.white, paddingHorizontal: 16, paddingVertical: 12 },
   scroll: { paddingHorizontal: 16 },
-  exerciseCard: {
-    backgroundColor: COLORS.card, borderRadius: 12, padding: 14, marginBottom: 14,
-  },
+  exerciseCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 14, marginBottom: 14 },
   exerciseName: { fontSize: 16, fontWeight: '600', color: COLORS.white },
   category: { fontSize: 12, color: COLORS.primary, marginTop: 2, marginBottom: 10 },
-  setHeader: { flexDirection: 'row', marginBottom: 6 },
+  setHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   setCol: { fontSize: 11, color: COLORS.muted, fontWeight: '500', textAlign: 'center' },
   setRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   setNum: { color: COLORS.muted, textAlign: 'center', fontSize: 14 },
@@ -196,14 +202,12 @@ const styles = StyleSheet.create({
     color: COLORS.white, fontSize: 15, marginHorizontal: 4, textAlign: 'center',
   },
   checkBtn: {
-    width: 30, height: 30, borderRadius: 8, borderWidth: 2,
+    height: 36, borderRadius: 8, borderWidth: 2,
     borderColor: COLORS.muted, alignItems: 'center', justifyContent: 'center',
+    marginRight: 4,
   },
   checkBtnActive: { backgroundColor: COLORS.success, borderColor: COLORS.success },
-  removeSet: { paddingLeft: 6 },
-  addSetBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingVertical: 8, marginTop: 4,
-  },
+  removeSet: { paddingLeft: 4, paddingRight: 2 },
+  addSetBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, marginTop: 4 },
   addSetText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
 });
