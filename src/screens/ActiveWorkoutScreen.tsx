@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { saveSession } from '../storage/storage';
+import { saveSession, getSessions } from '../storage/storage';
 import { WorkoutSession, ExerciseSession, SetEntry } from '../types';
 import { COLORS } from '../theme';
 import { alertConfirm } from '../utils/alert';
@@ -23,9 +23,34 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
     }))
   );
 
+  // Timer
   useEffect(() => {
     const timer = setInterval(() => setElapsed(Math.floor((Date.now() - startTime.current) / 1000)), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Pre-fill weight/reps from most recent matching session
+  useEffect(() => {
+    getSessions().then(sessions => {
+      const prev = sessions
+        .filter(s => s.templateId === template.id)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      if (!prev) return;
+      setExercises(current =>
+        current.map(ex => {
+          const prevEx = prev.exercises.find(pe => pe.exercise.id === ex.exercise.id);
+          if (!prevEx) return ex;
+          return {
+            ...ex,
+            sets: ex.sets.map((s, i) => ({
+              weight: prevEx.sets[i]?.weight ?? s.weight,
+              reps: prevEx.sets[i]?.reps ?? s.reps,
+              completed: false,
+            })),
+          };
+        })
+      );
+    });
   }, []);
 
   const formatTime = (secs: number) => {
@@ -114,31 +139,28 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
             <Text style={styles.exerciseName}>{ex.exercise.name}</Text>
             <Text style={styles.category}>{ex.exercise.category}</Text>
 
-            {/* Header: Set | ✓ | Weight | Reps */}
+            {/* Column headers */}
             <View style={styles.setHeader}>
-              <Text style={[styles.setCol, { width: 28 }]}>#</Text>
-              <Text style={[styles.setCol, { width: 44 }]}>Done</Text>
-              <Text style={[styles.setCol, { flex: 1 }]}>Weight (kg)</Text>
-              <Text style={[styles.setCol, { flex: 1 }]}>Reps</Text>
+              <Text style={styles.colHash}>#</Text>
+              <Text style={styles.colDone}>✓</Text>
+              <Text style={styles.colWeight}>kg</Text>
+              <Text style={styles.colReps}>Reps</Text>
+              <View style={styles.colRemove} />
             </View>
 
             {ex.sets.map((set, setIdx) => (
-              <View key={setIdx} style={styles.setRow}>
-                {/* Set number */}
-                <Text style={[styles.setNum, { width: 28 }]}>{setIdx + 1}</Text>
+              <View key={setIdx} style={[styles.setRow, set.completed && styles.setRowDone]}>
+                <Text style={styles.colHash}>{setIdx + 1}</Text>
 
-                {/* Done checkbox — moved left for easy thumb access */}
                 <TouchableOpacity
-                  style={[styles.checkBtn, set.completed && styles.checkBtnActive, { width: 48 }]}
+                  style={[styles.checkBtn, set.completed && styles.checkBtnActive, { width: styles.colDone.width }]}
                   onPress={() => updateSet(exIdx, setIdx, 'completed', !set.completed)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Ionicons name="checkmark" size={18} color={set.completed ? '#FFFFFF' : COLORS.muted} />
+                  <Ionicons name="checkmark" size={18} color={set.completed ? '#FFF' : COLORS.muted} />
                 </TouchableOpacity>
 
-                {/* Weight */}
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, { width: styles.colWeight.width }]}
                   placeholder="0"
                   placeholderTextColor={COLORS.muted}
                   keyboardType="decimal-pad"
@@ -146,9 +168,8 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
                   onChangeText={v => updateSet(exIdx, setIdx, 'weight', v)}
                 />
 
-                {/* Reps */}
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, { width: styles.colReps.width }]}
                   placeholder="0"
                   placeholderTextColor={COLORS.muted}
                   keyboardType="number-pad"
@@ -156,12 +177,13 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
                   onChangeText={v => updateSet(exIdx, setIdx, 'reps', v)}
                 />
 
-                {/* Remove */}
-                {ex.sets.length > 1 && (
-                  <TouchableOpacity onPress={() => removeSet(exIdx, setIdx)} style={styles.removeSet}>
-                    <Ionicons name="remove-circle-outline" size={20} color={COLORS.danger} />
-                  </TouchableOpacity>
-                )}
+                <View style={styles.colRemove}>
+                  {ex.sets.length > 1 && (
+                    <TouchableOpacity onPress={() => removeSet(exIdx, setIdx)}>
+                      <Ionicons name="remove-circle-outline" size={20} color={COLORS.danger} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             ))}
 
@@ -188,26 +210,32 @@ const styles = StyleSheet.create({
   timer: { color: COLORS.primary, fontWeight: '600', fontSize: 15 },
   finishBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 16, paddingVertical: 7, borderRadius: 8 },
   finishText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
-  workoutName: { fontSize: 22, fontWeight: '700', color: COLORS.white, paddingHorizontal: 16, paddingVertical: 12 },
-  scroll: { paddingHorizontal: 16 },
-  exerciseCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 14, marginBottom: 14 },
-  exerciseName: { fontSize: 16, fontWeight: '600', color: COLORS.white },
-  category: { fontSize: 12, color: COLORS.primary, marginTop: 2, marginBottom: 10 },
+  workoutName: { fontSize: 20, fontWeight: '700', color: COLORS.white, paddingHorizontal: 16, paddingVertical: 10 },
+  scroll: { paddingHorizontal: 12 },
+  exerciseCard: { backgroundColor: COLORS.card, borderRadius: 12, padding: 12, marginBottom: 12 },
+  exerciseName: { fontSize: 15, fontWeight: '600', color: COLORS.white },
+  category: { fontSize: 11, color: COLORS.primary, marginTop: 2, marginBottom: 10 },
+
+  // Fixed column widths — every row (header + data) uses the same values
+  colHash:   { width: 22, textAlign: 'center', fontSize: 12, color: COLORS.muted },
+  colDone:   { width: 44, textAlign: 'center', fontSize: 11, color: COLORS.muted },
+  colWeight: { width: 76, textAlign: 'center', fontSize: 11, color: COLORS.muted },
+  colReps:   { width: 60, textAlign: 'center', fontSize: 11, color: COLORS.muted },
+  colRemove: { width: 28, alignItems: 'center' },
+
   setHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  setCol: { fontSize: 11, color: COLORS.muted, fontWeight: '500', textAlign: 'center' },
-  setRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  setNum: { color: COLORS.muted, textAlign: 'center', fontSize: 14 },
+  setRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, borderRadius: 8, paddingVertical: 2 },
+  setRowDone: { backgroundColor: '#D1FAE510' },
+
   input: {
-    backgroundColor: COLORS.inputBg, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10,
-    color: COLORS.white, fontSize: 15, marginHorizontal: 4, textAlign: 'center',
+    backgroundColor: COLORS.inputBg, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 4,
+    color: COLORS.white, fontSize: 14, textAlign: 'center', marginHorizontal: 2,
   },
   checkBtn: {
-    width: 44, height: 44, borderRadius: 10, borderWidth: 2,
+    height: 40, borderRadius: 8, borderWidth: 2,
     borderColor: COLORS.muted, alignItems: 'center', justifyContent: 'center',
-    marginRight: 4,
   },
   checkBtnActive: { backgroundColor: COLORS.success, borderColor: COLORS.success },
-  removeSet: { paddingLeft: 4, paddingRight: 2 },
-  addSetBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, marginTop: 4 },
+  addSetBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 8, marginTop: 2 },
   addSetText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
 });
