@@ -108,7 +108,7 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
 
       <Text style={styles.workoutName}>{template.name}</Text>
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="always">
         {exercises.map((ex, exIdx) => (
           <View key={ex.exercise.id} style={styles.exerciseCard}>
             <Text style={styles.exerciseName}>{ex.exercise.name}</Text>
@@ -117,7 +117,7 @@ export default function ActiveWorkoutScreen({ route, navigation }: any) {
             {/* Header: Set | ✓ | Weight | Reps */}
             <View style={styles.setHeader}>
               <Text style={[styles.setCol, { width: 28 }]}>#</Text>
-              <Text style={[styles.setCol, { width: 48 }]}>Done</Text>
+              <Text style={[styles.setCol, { width: 44 }]}>Done</Text>
               <Text style={[styles.setCol, { flex: 1 }]}>Weight (kg)</Text>
               <Text style={[styles.setCol, { flex: 1 }]}>Reps</Text>
             </View>
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     color: COLORS.white, fontSize: 15, marginHorizontal: 4, textAlign: 'center',
   },
   checkBtn: {
-    height: 36, borderRadius: 8, borderWidth: 2,
+    width: 44, height: 44, borderRadius: 10, borderWidth: 2,
     borderColor: COLORS.muted, alignItems: 'center', justifyContent: 'center',
     marginRight: 4,
   },

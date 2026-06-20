@@ -171,7 +171,7 @@ export default function HistoryScreen() {
                 )}
               </View>
 
-              <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+              <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="always">
                 {displaySession.exercises.map((ex, exIdx) => (
                   <View key={exIdx} style={styles.exCard}>
                     <Text style={styles.exName}>{ex.exercise.name}</Text>
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     color: COLORS.white, fontSize: 14, textAlign: 'center', marginHorizontal: 3,
   },
   editCheckBtn: {
-    width: 34, height: 34, borderRadius: 8, borderWidth: 2,
+    width: 44, height: 44, borderRadius: 10, borderWidth: 2,
     borderColor: COLORS.muted, alignItems: 'center', justifyContent: 'center',
     marginLeft: 3,
   },
